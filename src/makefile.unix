@@ -216,6 +216,5 @@ clean:
 	-rm -f diminutivecoind
 	-rm -f obj/*.o
 	-rm -f obj/*.P
-	-rm -f obj/build.h
 
 FORCE:
