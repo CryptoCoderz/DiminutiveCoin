@@ -1,0 +1,16 @@
+# http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-1.0.html
+[Desktop Entry]
+Type=Application
+Version=master
+Encoding=UTF-8
+Name=DiminutiveCoin
+Icon=${SNAP}/meta/gui/diminutivecoin128.png
+MimeType=x-scheme-handler/diminutivecoin;
+Exec=diminutivecoin
+Terminal=false
+Categories=Office;Finance;
+Comment=DiminutiveCoin P2P Hybrid Cryptocurrency
+Keywords=internet;bitcoin;diminutivecoin;
+Comment[fr]=Diminutivecoin, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=Diminutivecoin, eşten eşe kriptografik sanal para birimi
+Comments[es]=Diminutivecoin, moneda virtual criptográfica peer-to-peer
