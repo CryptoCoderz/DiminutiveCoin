@@ -80,6 +80,9 @@ parts:
       - libbz2-dev
     override-build: |
       echo "Compile Boost 1.55.0"
+      wget https://diminutivecoin.com/wp-content/storage/contrib/boost-1.56.0_copy_file.diff
+      echo "Applying patch"
+      patch --ignore-whitespace -p1 boost-1.56.0_copy_file.diff
       sudo ./bootstrap.sh --prefix=/usr/local/ --with-icu
       #sudo ./b2 install -j6 threading=multi --build-type=complete --layout=tagged
       sudo ./b2 clean
