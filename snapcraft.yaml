@@ -147,7 +147,7 @@ parts:
   daemon:
     source: https://github.com/MadCatMining/DiminutiveCoin.git
     source-type: git
-    source-tag: snap
+    source-tag: main
     plugin: nil
     build-packages:
       - build-essential
