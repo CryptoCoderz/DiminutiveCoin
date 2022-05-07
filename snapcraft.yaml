@@ -170,7 +170,7 @@ parts:
   diminutivecoin:
     source: https://github.com/MadCatMining/DiminutiveCoin.git
     source-type: git
-    source-tag: snap
+    source-tag: main
     plugin: qmake
     qt-version: qt5
     build-packages:
