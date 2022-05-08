@@ -7,7 +7,7 @@ version: '1.0.1.1'
 summary: DiminutiveCoin
 description: | 
   An open source hybrid cryptocurrency called DiminutiveCoin, which features Staking, Mining, Multisig, and much more!
-base: core20
+base: core18
   
 grade: stable
 confinement: strict
@@ -160,13 +160,37 @@ parts:
       - libevent-dev
       - bsdmainutils
     override-build: |
+      set -x
+      ARCH=$(uname -m)
+      MF=makefile.unix
+      if [ "$ARCH" = "x86_64" ]; then
+          MF="makefile.unix"
+      elif [ "$ARCH" = "i686" ] || [ "$ARCH" = "i386" ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armv6l" ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = *"armv8"* ] || [ "$ARCH" = "aarch64" ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = *"mips64le"* ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = *"mips64"* ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = *"mipsle"* ]; then
+          MF="makefile.arm"
+      elif [ "$ARCH" = *"mips"* ]; then
+          MF="makefile.arm"
+      elif [[ "$ARCH" == "ppc64le" ]]; then
+          MF="makefile.arm"
+      elif [[ "$ARCH" == "ppc64" ]]; then
+          MF="makefile.arm"
+      fi
       chmod 775 share/genbuild.sh && chmod 775 src/leveldb/build_detect_platform 
       cd src/leveldb
       make clean
-      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make libleveldb.a libmemenv.a -j6
+      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make libleveldb.a libmemenv.a -j4
       cd ..
       make -f makefile.unix clean
-      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make -f makefile.unix STATIC=1 -j6
+      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make -f makefile.unix STATIC=1 -j4
       mkdir $SNAPCRAFT_PART_INSTALL/bin
       cp $SNAPCRAFT_PART_BUILD/src/diminutivecoind $SNAPCRAFT_PART_INSTALL/bin/diminutivecoind
   diminutivecoin:
