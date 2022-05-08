@@ -163,10 +163,10 @@ parts:
       chmod 775 share/genbuild.sh && chmod 775 src/leveldb/build_detect_platform 
       cd src/leveldb
       make clean
-      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include/boost BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make libleveldb.a libmemenv.a -j6
+      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make libleveldb.a libmemenv.a -j6
       cd ..
       make -f makefile.unix clean
-      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include/boost BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make -f makefile.unix STATIC=1 -j6
+      BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make -f makefile.unix STATIC=1 -j6
       mkdir $SNAPCRAFT_PART_INSTALL/bin
       cp $SNAPCRAFT_PART_BUILD/src/diminutivecoind $SNAPCRAFT_PART_INSTALL/bin/diminutivecoind
   diminutivecoin:
