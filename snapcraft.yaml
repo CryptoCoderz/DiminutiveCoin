@@ -7,7 +7,7 @@ version: '1.0.1.1'
 summary: DiminutiveCoin
 description: | 
   An open source hybrid cryptocurrency called DiminutiveCoin, which features Staking, Mining, Multisig, and much more!
-base: core18
+base: core20
   
 grade: stable
 confinement: strict
