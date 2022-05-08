@@ -210,6 +210,8 @@ parts:
       - libminiupnpc-dev
       - libevent-dev
       - libtool
+      - libprotobuf-dev
+      - protobuf-compiler
       - libqt5gui5
       - libqt5core5a
       - libqt5dbus5
