@@ -78,6 +78,7 @@ parts:
       - autotools-dev
       - libicu-dev
       - libbz2-dev
+      - libboost-all-dev
     override-build: |
       echo "Compile Boost 1.55.0"
       wget https://diminutivecoin.com/wp-content/storage/contrib/boost-1.56.0_copy_file.diff
@@ -189,7 +190,7 @@ parts:
       make clean
       BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make libleveldb.a libmemenv.a -j4
       cd ..
-      make -f makefile.unix clean
+      make -f "${MF}" clean
       BOOST_LIB_SUFFIX=-mt BOOST_INCLUDE_PATH=/usr/local/include BOOST_LIB_PATH=/usr/local/lib OPENSSL_INCLUDE_PATH=/usr/local/ssl/include OPENSSL_LIB_PATH=/usr/local/ssl/lib BDB_INCLUDE_PATH=/usr/local/include BDB_LIB_PATH=/usr/local/lib make -f "${MF}" -j4
       mkdir $SNAPCRAFT_PART_INSTALL/bin
       cp $SNAPCRAFT_PART_BUILD/src/diminutivecoind $SNAPCRAFT_PART_INSTALL/bin/diminutivecoind
