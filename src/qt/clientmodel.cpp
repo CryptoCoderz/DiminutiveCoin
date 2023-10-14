@@ -13,6 +13,8 @@
 #include <QTimer>
 #include <QDebug>
 
+#include <boost/bind.hpp>// TODO: Update handling for newer boost (deprecated)
+
 static const int64_t nClientStartupTime = GetTime();
 
 ClientModel::ClientModel(OptionsModel *optionsModel, QObject *parent) :

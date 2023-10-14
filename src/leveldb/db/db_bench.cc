@@ -431,7 +431,7 @@ class Benchmark {
         benchmarks = sep + 1;
       }
 
-      // Reset parameters that may be overriddden bwlow
+      // Reset parameters that may be overridden below
       num_ = FLAGS_num;
       reads_ = (FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads);
       value_size_ = FLAGS_value_size;
@@ -468,7 +468,7 @@ class Benchmark {
       } else if (name == Slice("readseq")) {
         method = &Benchmark::ReadSequential;
       } else if (name == Slice("readreverse")) {
-        method = &Benchmark::ReadReverse;
+        method = &Benchmark::ReadDigitalKasherse;
       } else if (name == Slice("readrandom")) {
         method = &Benchmark::ReadRandom;
       } else if (name == Slice("readmissing")) {
@@ -753,7 +753,7 @@ class Benchmark {
     thread->stats.AddBytes(bytes);
   }
 
-  void ReadReverse(ThreadState* thread) {
+  void ReadDigitalKasherse(ThreadState* thread) {
     Iterator* iter = db_->NewIterator(ReadOptions());
     int i = 0;
     int64_t bytes = 0;
@@ -811,7 +811,6 @@ class Benchmark {
 
   void SeekRandom(ThreadState* thread) {
     ReadOptions options;
-    std::string value;
     int found = 0;
     for (int i = 0; i < reads_; i++) {
       Iterator* iter = db_->NewIterator(options);

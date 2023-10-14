@@ -6,6 +6,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/bind.hpp>// TODO: Update handling for newer boost (deprecated)
 
 #include "chainparams.h"
 #include "checkpoints.h"

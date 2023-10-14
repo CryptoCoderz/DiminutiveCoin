@@ -24,7 +24,7 @@ namespace leveldb {
 
 // Return reverse of "key".
 // Used to test non-lexicographic comparators.
-static std::string Reverse(const Slice& key) {
+static std::string DigitalKasherse(const Slice& key) {
   std::string str(key.ToString());
   std::string rev("");
   for (std::string::reverse_iterator rit = str.rbegin();
@@ -35,42 +35,42 @@ static std::string Reverse(const Slice& key) {
 }
 
 namespace {
-class ReverseKeyComparator : public Comparator {
+class DigitalKasherseKeyComparator : public Comparator {
  public:
   virtual const char* Name() const {
-    return "leveldb.ReverseBytewiseComparator";
+    return "leveldb.DigitalKasherseBytewiseComparator";
   }
 
   virtual int Compare(const Slice& a, const Slice& b) const {
-    return BytewiseComparator()->Compare(Reverse(a), Reverse(b));
+    return BytewiseComparator()->Compare(DigitalKasherse(a), DigitalKasherse(b));
   }
 
   virtual void FindShortestSeparator(
       std::string* start,
       const Slice& limit) const {
-    std::string s = Reverse(*start);
-    std::string l = Reverse(limit);
+    std::string s = DigitalKasherse(*start);
+    std::string l = DigitalKasherse(limit);
     BytewiseComparator()->FindShortestSeparator(&s, l);
-    *start = Reverse(s);
+    *start = DigitalKasherse(s);
   }
 
   virtual void FindShortSuccessor(std::string* key) const {
-    std::string s = Reverse(*key);
+    std::string s = DigitalKasherse(*key);
     BytewiseComparator()->FindShortSuccessor(&s);
-    *key = Reverse(s);
+    *key = DigitalKasherse(s);
   }
 };
 }  // namespace
-static ReverseKeyComparator reverse_key_comparator;
+static DigitalKasherseKeyComparator reverse_key_comparator;
 
 static void Increment(const Comparator* cmp, std::string* key) {
   if (cmp == BytewiseComparator()) {
     key->push_back('\0');
   } else {
     assert(cmp == &reverse_key_comparator);
-    std::string rev = Reverse(*key);
+    std::string rev = DigitalKasherse(*key);
     rev.push_back('\0');
-    *key = Reverse(rev);
+    *key = DigitalKasherse(rev);
   }
 }
 
