@@ -71,7 +71,7 @@ static const int BLOCK_TEMP_CHECKPOINT_DEPTH = 120;
 /** FutureDrift parameters */ // inline int64_t FutureDrift(int64_t nTime) { return nTime + 30 * 60; }
 inline int64_t TimeDrift() { return 30 * 60; } // Default time drift window
 inline int64_t FutureDriftV1(int64_t nTime) { return nTime + TimeDrift(); } // Initial future drift | Protocol-v2
-inline int64_t FutureDriftV2(int64_t nTime) { return nTime + (TimeDrift() / 6); } // Tightened future drift | Protocol-v3
+inline int64_t FutureDriftV2(int64_t nTime) { return nTime + (TimeDrift() / 10); } // Tightened future drift | VRX_V3.6
 inline int64_t FutureDrift(int64_t nTime) { return IsVRX_V3_6(nTime) ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
 /** Wave PoS start block */
 inline bool IsWavePOS(int nHeight) { return TestNet() || nHeight > 40000; }
@@ -97,6 +97,7 @@ extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockSize;
 extern int64_t nLastCoinStakeSearchInterval;
 extern const std::string strMessageMagic;
+extern std::string GetRelayPeerAddr;
 extern int64_t nTimeBestReceived;
 extern bool fImporting;
 extern bool fReindex;

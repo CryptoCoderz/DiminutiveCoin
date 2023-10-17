@@ -28,9 +28,9 @@ void ReadDemiConfigFile(std::string peerReadAddr)
                std::string ConfigFileAlias = "/Demi.conf";
                ConfPath += ConfigFileAlias.c_str();
                FILE* ConfFile = fopen(ConfPath.c_str(), "w");
-               fprintf(ConfFile, "127.0.0.1:22448\n");
-               fprintf(ConfFile, "127.0.0.1:22448\n");
-               fprintf(ConfFile, "127.0.0.1:22448\n");
+               fprintf(ConfFile, "127.0.0.1:16001\n");
+               fprintf(ConfFile, "127.0.0.1:16001\n");
+               fprintf(ConfFile, "127.0.0.1:16001\n");
                fclose(ConfFile);
     }
 

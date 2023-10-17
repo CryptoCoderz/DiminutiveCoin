@@ -407,7 +407,7 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/pbkdf2.cpp \
     src/deminode/demimodule.cpp \
     src/deminode/deminet.cpp \
-    src/deminode/demisync.cpp \
+    src/deminode/demisync.cpp
 
 RESOURCES += \
     src/qt/diminutivecoin.qrc

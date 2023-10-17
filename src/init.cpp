@@ -34,6 +34,7 @@ using namespace boost;
 
 #ifdef ENABLE_WALLET
 CWallet* pwalletMain = NULL;
+int nNewHeight;
 #endif
 CClientUIInterface uiInterface;
 bool fConfChange;
@@ -243,6 +244,7 @@ std::string HelpMessage()
     strUsage += "  -checklevel=<n>        " + _("How thorough the block verification is (0-6, default: 1)") + "\n";
     strUsage += "  -loadblock=<file>      " + _("Imports blocks from external blk000?.dat file") + "\n";
     strUsage += "  -maxorphanblocksmib=<n> " + strprintf(_("Keep at most <n> MiB of unconnectable blocks in memory (default: %u)"), DEFAULT_MAX_ORPHAN_BLOCKS) + "\n";
+    strUsage += "  -backtoblock=<n>      " + _("Rollback local block chain to block height <n>") + "\n";
 
     strUsage += "  -datacarriersize       " + strprintf(_("Maximum size of data in data carrier transactions we relay and mine (default: %u)"), MAX_OP_RETURN_RELAY) + "\n";
 
@@ -255,6 +257,14 @@ std::string HelpMessage()
     strUsage += "  -rpcsslcertificatechainfile=<file.cert>  " + _("Server certificate file (default: server.cert)") + "\n";
     strUsage += "  -rpcsslprivatekeyfile=<file.pem>         " + _("Server private key (default: server.pem)") + "\n";
     strUsage += "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1.2+HIGH:TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!3DES:@STRENGTH)") + "\n";
+
+    strUsage += "\n" + _("Demi-node feature options:") + "\n";
+    strUsage += "  -deminodes=<n> " + _("Toggle Demi-node features on/off, (0-1, default: 0") + "\n";
+    strUsage += "  -demimaxdepth=<n> " + _("Set the maximum override depth for chain reorganization, (default: 0") + "\n";
+    strUsage += "  -demilocksync=<n> " + _("Lock Demi-nodes to either allow or deny standard node sync failover, (0-1, default: 0") + "\n";
+    strUsage += "  -demistrict=<n> " + _("Toggle using Demi-nodes exclusively to accept new blocks on/off, (0-1, default: 0") + "\n";
+    strUsage += "  -demipeerlimit=<n> " + _("Allow/Deny blocks from peers using legacy clients/wallets, (0-1, default: 0") + "\n";
+    strUsage += "  -demireorgtype=<n> " + _("Allow/Deny reorganize requests from peers as well as Demi-nodes, (0-1, default: 0") + "\n";
 
     return strUsage;
 }
@@ -685,6 +695,43 @@ bool AppInit2(boost::thread_group& threadGroup)
         return false;
     }
 
+    if (mapArgs.count("-backtoblock"))
+    {
+        strRollbackToBlock = GetArg("-backtoblock", "");
+        LogPrintf("Rolling blocks back...\n");
+        if(!strRollbackToBlock.empty()){
+            nNewHeight = GetArg("-backtoblock", (uint64_t)"");
+            fRollbacktoBlock = true;
+            CBlockIndex* pindex = pindexBest;
+            int pindexGap = (pindex->nHeight - nNewHeight);
+            while (pindex != NULL && pindex->nHeight > nNewHeight)
+            {
+                ostringstream osHeight;
+                osHeight << pindex->nHeight;
+                string strHeight = osHeight.str();
+                uiInterface.InitMessage(strprintf("Rolling blocks back... %s to %i \n", strHeight, nNewHeight));
+                pindex = pindex->pprev;
+            }
+            if (pindex != NULL)
+            {
+                LogPrintf("Back to block index %d\n", nNewHeight);
+                uiInterface.InitMessage(strprintf("Reorganizing %u blocks, please wait... \n", pindexGap));
+                CTxDB txdbAddr("rw");
+                CBlock block;
+                block.ReadFromDisk(pindex);
+                block.SetBestChain(txdbAddr, pindex);
+            }
+            else
+            {
+                LogPrintf("Block %d not found\n", nNewHeight);
+            }
+        }
+        else
+        {
+            LogPrintf("Back to block was requested but not defined!\n");
+        }
+    }
+
     // ********************************************************* Step 8: load wallet
 #ifdef ENABLE_WALLET
     if (fDisableWallet) {
@@ -807,6 +854,30 @@ bool AppInit2(boost::thread_group& threadGroup)
            addrman.size(), GetTimeMillis() - nStart);
 
     // ********************************************************* Step 11: start node
+
+    // Check for Demi-node toggle
+    uiInterface.InitMessage(_("Checking Demi-node feature toggle..."));
+    fDemiNodes = GetBoolArg("-deminodes", false);
+    LogPrintf("Checking for Demi-nodes feature toggle...\n");// BLOCK_REORG_OVERRIDE_DEPTH
+    if(fDemiNodes) {
+        // Set Demi-node values
+        uiInterface.InitMessage(_("Configuring Demi-node systems..."));
+        std::string strOverrideDepth = GetArg("-demimaxdepth", "");
+        if(!strOverrideDepth.empty()) {
+            std::istringstream(strOverrideDepth) >> BLOCK_REORG_OVERRIDE_DEPTH;
+            if(BLOCK_REORG_OVERRIDE_DEPTH == 0) {
+                LogPrintf("Continuing with Demi-node depth override manually disabled by user...\n");
+            } else if(BLOCK_REORG_OVERRIDE_DEPTH < 0) {
+                return InitError(_("Invalid Demi-node depth override, selected value must be higher than Zero!\n"));
+            } else {
+                BLOCK_REORG_THRESHOLD = (BLOCK_REORG_MAX_DEPTH + BLOCK_REORG_OVERRIDE_DEPTH);
+                LogPrintf("Continuing with Demi-node depth override height of: %s\n", strOverrideDepth.c_str());
+            }
+        }
+    } else {
+        // Demi-nodes disabled
+        LogPrintf("No Demi-node features selected... skipping...\n");
+    }
 
     if (!CheckDiskSpace())
         return false;

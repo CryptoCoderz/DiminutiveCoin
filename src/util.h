@@ -99,6 +99,11 @@ extern std::string strMiscWarning;
 extern bool fNoListen;
 extern bool fLogTimestamps;
 extern volatile bool fReopenDebugLog;
+//Roll back to block
+extern std::string strRollbackToBlock;
+extern bool fRollbacktoBlock;
+// Demi-node toggle
+extern bool fDemiNodes;
 
 void RandAddSeed();
 void RandAddSeedPerfmon();
@@ -176,7 +181,11 @@ boost::filesystem::path GetPidFile();
 #ifndef WIN32
 void CreatePidFile(const boost::filesystem::path &path, pid_t pid);
 #endif
-void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
+// Enforced Config Support
+void BuildConfigFile();
+void StreamConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
+void ReadConfigFile();
+void InitializeConfigFile();
 #ifdef WIN32
 boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
@@ -190,13 +199,12 @@ std::string FormatFullVersion();
 std::string FormatSubVersion(const std::string& name, int nClientVersion, const std::vector<std::string>& comments);
 void runCommand(std::string strCommand);
 
-
-
-
-
-
-
-
+/**
+ * Convert string to signed 32-bit integer with strict parse error feedback.
+ * @returns true if the entire string could be parsed as valid integer,
+ *   false if not the entire string could be parsed or when overflow or underflow occurred.
+ */
+bool ParseInt32(const std::string& str, int32_t *out);
 
 inline std::string i64tostr(int64_t n)
 {
