@@ -230,6 +230,7 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/chainparams.h \
     src/chainparamsseeds.h \
     src/checkpoints.h \
+    src/fork.h \
     src/compat.h \
     src/coincontrol.h \
     src/sync.h \
@@ -243,6 +244,7 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/core.h \
     src/main.h \
     src/miner.h \
+    src/mining.h \
     src/net.h \
     src/key.h \
     src/db.h \
@@ -251,6 +253,8 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/walletdb.h \
     src/script.h \
     src/init.h \
+    src/velocity.h \
+    src/rpcvelocity.h \
     src/mruset.h \
     src/json/json_spirit_writer_template.h \
     src/json/json_spirit_writer.h \
@@ -317,7 +321,10 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/crypto/sph_shabal.h \
     src/crypto/sph_whirlpool.h \
     src/crypto/sph_haval.h \
-    src/crypto/sph_sha2.h
+    src/crypto/sph_sha2.h \
+    src/deminode/demimodule.h \
+    src/deminode/deminet.h \
+    src/deminode/demisync.h
 
 SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/qt/transactiontablemodel.cpp \
@@ -346,7 +353,10 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
+    src/velocity.cpp \
+    src/rpcvelocity.cpp \
     src/checkpoints.cpp \
+    src/fork.cpp \
     src/addrman.cpp \
     src/db.cpp \
     src/walletdb.cpp \
@@ -394,7 +404,10 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/scrypt-x86.S \
     src/scrypt-x86_64.S \
     src/scrypt.cpp \
-    src/pbkdf2.cpp
+    src/pbkdf2.cpp \
+    src/deminode/demimodule.cpp \
+    src/deminode/deminet.cpp \
+    src/deminode/demisync.cpp \
 
 RESOURCES += \
     src/qt/diminutivecoin.qrc

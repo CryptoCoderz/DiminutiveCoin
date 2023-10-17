@@ -677,7 +677,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
                           error("AcceptToMemoryPool : too many sigops %s, %d > %d",
                                 hash.ToString(), nSigOps, MAX_TX_SIGOPS));
 
-        int64_t nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
+        int64_t nFees = tx.GetValueMapIn(mapInputs)-tx.GetValueOut();
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
         // Don't accept it if it can't get into a block
@@ -1039,7 +1039,7 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight)
 //      #     #      #     #
 //        # #          #  #
 //         #            #
-//	 Peak POS      Next Peak POS  
+//	 Peak POS      Next Peak POS
 //   Block POW  1 - 2 reward Loop + Block POS 1 - 2 reward Loop with a halving sub 
       
 // ppcoin: find last block index up to pindex
@@ -1062,7 +1062,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     int64_t PastBlocksMin = 7;
     int64_t PastBlocksMax = 24;
     int64_t CountBlocks = 0;
-    int64_t nTargetSpacing = GetTargetSpacing(pindexLast->nHeight);
+    int64_t nTargetSpacing = BLOCK_SPACING;
     CBigNum PastDifficultyAverage;
     CBigNum PastDifficultyAveragePrev;
 
@@ -1218,7 +1218,7 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
 
 
 bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool,
-                               bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
+                               bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid) const
 {
     // FetchInputs can return false either because we just haven't seen some inputs
     // (in which case the transaction should be stored as an orphan)
@@ -1301,7 +1301,7 @@ const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& in
     return txPrev.vout[input.prevout.n];
 }
 
-int64_t CTransaction::GetValueIn(const MapPrevTx& inputs) const
+int64_t CTransaction::GetValueMapIn(const MapPrevTx& inputs) const
 {
     if (IsCoinBase())
         return 0;
@@ -1536,7 +1536,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (nSigOps > MAX_BLOCK_SIGOPS)
                 return DoS(100, error("ConnectBlock() : too many sigops"));
 
-            int64_t nTxValueIn = tx.GetValueIn(mapInputs);
+            int64_t nTxValueIn = tx.GetValueMapIn(mapInputs);
             int64_t nTxValueOut = tx.GetValueOut();
             nValueIn += nTxValueIn;
             nValueOut += nTxValueOut;
@@ -2818,6 +2818,31 @@ void static ProcessGetData(CNode* pfrom)
                         pfrom->PushMessage("inv", vInv);
                         pfrom->hashContinue = 0;
                     }
+                }
+            }
+            else if (inv.type == MSG_DEMIBLOCK)
+            {
+                // Send block from disk
+                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
+                if (mi != mapBlockIndex.end())
+                {
+                    CBlock block;
+                    block.ReadFromDisk((*mi).second);
+
+                    // previous versions could accept sigs with high s
+                    if (!IsCanonicalBlockSignature(&block, true)) {
+                        bool ret = EnsureLowS(block.vchBlockSig);
+                        assert(ret);
+                    }
+
+                    // Send the requested block to peer
+                    pfrom->PushMessage("demiblock", block);
+                } else {
+                    // Send best available block to peer
+                    map<uint256, CBlockIndex*>::iterator mi2 = mapBlockIndex.find(pindexBest->GetBlockHash());
+                    CBlock block;
+                    block.ReadFromDisk((*mi2).second) ;
+                    pfrom->PushMessage("demiblock", block);
                 }
             }
             else if (inv.IsKnownType())
