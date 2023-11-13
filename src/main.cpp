@@ -41,16 +41,12 @@ CTxMemPool mempool;
 map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
-CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
-
 int nCoinbaseMaturity = 75;// Blocks to confirm if mining pow pos
 int nStakeMinConfirmations =  150; // 150 Minimum Block confirms 
 unsigned int nStakeMinAge =  2 * 60 * 60; // 2 Hour Minimum Stake 
 unsigned int nModifierInterval = 5 * 60; // time to elapse before new modifier is computed
-
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
-static const int64_t nTargetTimespan =  10 * 75; //750 Seconds 12.5 Minute Adjust Retagret 
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
@@ -954,97 +950,6 @@ void static PruneOrphanBlocks()
         mapOrphanBlocks.erase(hash);
     }
 }
-
-// miner's coin base reward
-int64_t GetProofOfWorkReward(int64_t nFees, int nHeight)
-{
-    int64_t nSubsidy = 0 * COIN; //DiminutiveCoin Protocol rewards 0.01 DIMI curve up and down to 0.04 DIMI
-
-    if(nHeight == 3)
-    {
-        nSubsidy = 11000 * COIN;
-    }
-    	else if((nHeight > 12) && (nHeight % 2))
-    {
-    	nSubsidy = 0.04 * COIN;
-    }
-        else if(nHeight > 12)
-    {
-    	nSubsidy = 0.01 * COIN;
-    }
-    
-    nSubsidy >>= (nHeight / 500000);
-    LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d nHeight=%d\n", FormatMoney(nSubsidy), nSubsidy, nHeight);
-
-    // hardCap v2.2
-    if(pindexBest->nMoneySupply > MAX_MONEY)
-    {
-        nSubsidy = 0;
-        LogPrint("MINEOUT", "GetProofOfWorkReward(): create=%s nFees=%d\n", FormatMoney(nFees), nFees);
-        return nSubsidy + nFees;
-    }
-    return nSubsidy + nFees;
-}
-
-
-
-
-// miner's coin stake reward
-int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight)
-{
-    int64_t nSubsidy= 0 * COIN;
-    
-    if(IsWavePOS(nHeight)) //Even blocks rewards 0.01 DIMI curve up and down 0.00001 DIMI 
-   
-{
-    	if(nHeight % 2)
-    	{
-        	nSubsidy = 0.00001 * COIN;
-    	}
-    	else
-    	{
-        	nSubsidy = 0.01 * COIN;
-    	}
-    	
-	}
-	
-	else
-	{
-		nSubsidy = 0.01 * COIN;
-    }
-
-    nSubsidy >>= (nHeight / 1000000);
-    LogPrint("creation", "GetProofOfStakeReward(): create=%s nCoinAge=%d nHeight=%d\n", FormatMoney(nSubsidy), nCoinAge, nHeight);
-
-    // hardCap v2.2
-    if(pindexBest->nMoneySupply > MAX_MONEY)
-    {
-        nSubsidy = 0.0;
-        LogPrint("MINEOUT", "GetProofOfStakeReward(): create=%s nFees=%d\n", FormatMoney(nFees), nFees);
-        return nSubsidy + nFees;
-    }
-
-    return nSubsidy + nFees;
-}
-
-//         
-//    Diminutive Wave POW / POS  Protocol 
-//        Peak POW     Next Peak POW
-//         #            #
-//        # #          # #
-//       #   #        #   #
-//      #     #      #     #
-//     #       #    #       #
-//    #         #  #         # Graph Above  POW   #
-//  --------------Midpoint breach----            # #
-//   #           ##           # Graph Below POS   #
-//    #         #  #         #
-//     #       #    #       #
-//      #     #      #     #
-//        # #          #  #
-//         #            #
-//	 Peak POS      Next Peak POS
-//   Block POW  1 - 2 reward Loop + Block POS 1 - 2 reward Loop with a halving sub 
       
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
@@ -1052,64 +957,6 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
         pindex = pindex->pprev;
     return pindex;
-}
-
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
-{
-    // DarkGravityWave v3.1, written by Evan Duffield - evan@dashpay.io
-    // Modified & revised by bitbandi for PoW support [implementation (fork) cleanup done by CryptoCoderz]
-    const CBigNum nProofOfWorkLimit = fProofOfStake ? bnProofOfStakeLimit : Params().ProofOfWorkLimit();
-    const CBlockIndex *BlockLastSolved = GetLastBlockIndex(pindexLast, fProofOfStake);
-    const CBlockIndex *BlockReading = BlockLastSolved;
-    int64_t nActualTimespan = 0;
-    int64_t LastBlockTime = 0;
-    int64_t PastBlocksMin = 7;
-    int64_t PastBlocksMax = 24;
-    int64_t CountBlocks = 0;
-    int64_t nTargetSpacing = BLOCK_SPACING;
-    CBigNum PastDifficultyAverage;
-    CBigNum PastDifficultyAveragePrev;
-
-            if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMax) {
-                return nProofOfWorkLimit.GetCompact();
-            }
-
-            for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
-                if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
-                CountBlocks++;
-
-                if(CountBlocks <= PastBlocksMin) {
-                    if (CountBlocks == 1) { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
-                    else { PastDifficultyAverage = ((PastDifficultyAveragePrev * CountBlocks) + (CBigNum().SetCompact(BlockReading->nBits))) / (CountBlocks + 1); }
-                    PastDifficultyAveragePrev = PastDifficultyAverage;
-                }
-
-                if(LastBlockTime > 0){
-                    int64_t Diff = (LastBlockTime - BlockReading->GetBlockTime());
-                    nActualTimespan += Diff;
-                }
-                LastBlockTime = BlockReading->GetBlockTime();
-                BlockReading = GetLastBlockIndex(BlockReading->pprev, fProofOfStake);
-            }
-
-            CBigNum bnNew(PastDifficultyAverage);
-
-            int64_t _nTargetTimespan = CountBlocks * nTargetSpacing;
-
-            if (nActualTimespan < _nTargetTimespan/3)
-                nActualTimespan = _nTargetTimespan/3;
-            if (nActualTimespan > _nTargetTimespan*3)
-                nActualTimespan = _nTargetTimespan*3;
-
-            // Retarget
-            bnNew *= nActualTimespan;
-            bnNew /= _nTargetTimespan;
-
-            if (bnNew > nProofOfWorkLimit){
-                bnNew = nProofOfWorkLimit;
-            }
-
-            return bnNew.GetCompact();
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -2386,6 +2233,10 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     // If we don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
+        //if(!fDemiPeerRelay(GetRelayPeerAddr)) {
+        //    return error("ProcessBlock() : Demi-node orphan blocks are not accepted from peer: %s", pfrom->addrName);
+        //}
+
         LogPrintf("ProcessBlock: ORPHAN BLOCK %lu, prev=%s\n", (unsigned long)mapOrphanBlocks.size(), pblock->hashPrevBlock.ToString());
 
         // Accept orphans as long as there is a node to request its parents from
@@ -3062,12 +2913,52 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CAddress addrFrom;
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-        if (pfrom->nVersion < MIN_PEER_PROTO_VERSION)
+        if (pfrom->nVersion < PROTOCOL_VERSION)
         {
-            // disconnect from peers older than this proto version
-            LogPrintf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString(), pfrom->nVersion);
-            pfrom->fDisconnect = true;
-            return false;
+            if(pindexBest->GetBlockTime() > HRD_LEGACY_CUTOFF)
+            {
+                // disconnect from peers older than legacy cutoff allows : Disconnect message 02
+                LogPrintf("partner %s using obsolete version %i; disconnecting DCM:02\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+            else if(pfrom->nVersion < MIN_PEER_PROTO_VERSION)
+            {
+                // disconnect from peers older than this proto version : Disconnect message 01
+                LogPrintf("partner %s using obsolete version %i; disconnecting DCM:01\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+            else if(pindexBest->nHeight >= BLOCKHEIGHT_CUTOFF)
+            {
+                // disconnect from peers older than min-peer version after this block : Disconnect message 00
+                LogPrintf("partner %s is not a viable sync/relay peer %i; disconnecting DCM:00\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+        }
+        else
+        {
+            if(pfrom->nVersion == (PROTOCOL_VERSION))
+            {
+                // log successfull same-version-peer connection : Connection attempt message 02
+                LogPrintf("partner %s using acceptable same version %i; connecting CAM:02\n", pfrom->addr.ToString(), pfrom->nVersion);
+            }
+            else
+            {
+                if(pindexBest->GetBlockTime() < HRD_FUTURE_CUTOFF)
+                {
+                    // log successfull future-peer-version connection : Connection attempt message 01
+                    LogPrintf("partner %s using acceptable future version %i; connecting CAM:01\n", pfrom->addr.ToString(), pfrom->nVersion);
+                }
+                else
+                {
+                    // disconnect from peers outside of future cutoff window (invalid versions) : Disconnect message 03
+                    LogPrintf("partner %s using invalid future version %i; disconnecting DCM:03\n", pfrom->addr.ToString(), pfrom->nVersion);
+                    pfrom->fDisconnect = true;
+                    return false;
+                }
+            }
         }
 
         if (pfrom->nVersion == 10300)
@@ -3755,12 +3646,14 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
             // There are overrides and exceptions, please consult
             // the Demi-node documentation for more information.
             //
+            LogPrintf("Starting Sync Request\n");
 
             if(!fDemiNodes) {
                 pto->fStartSync = false;
                 PushGetBlocks(pto, pindexBest, uint256(0));
+                LogPrintf("NON-Deminode request started\n");
             } else {
-                if(pto->nVersion < DEMINODE_VERSION) {
+                if(pto->nVersion < 60006) {
                     // Syncing from legacy peers is no longer supported.
                     // Later itterations of Demi-nodes will be able
                     // to re-activate this funtionality with advanced
@@ -3774,6 +3667,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
                     if(fDemiPeerRelay(pto->addrName)) {
                         pto->fStartSync = false;
                         PushGetBlocks(pto, pindexBest, uint256(0));
+                        LogPrintf("Deminode request started\n");
                     }
                 }
             }

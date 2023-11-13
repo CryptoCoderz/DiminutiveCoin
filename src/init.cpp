@@ -397,6 +397,9 @@ bool AppInit2(boost::thread_group& threadGroup)
             LogPrintf("AppInit2 : parameter interaction: -salvagewallet=1 -> setting -rescan=1\n");
     }
 
+    // Process Diminutivecoin config
+    InitializeConfigFile();
+
     // ********************************************************* Step 3: parameter-to-internal-flags
 
     fDebug = !mapMultiArgs["-debug"].empty();
@@ -855,6 +858,12 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // ********************************************************* Step 11: start node
 
+    if (!CheckDiskSpace())
+        return false;
+
+    if (!strErrors.str().empty())
+        return InitError(strErrors.str());
+
     // Check for Demi-node toggle
     uiInterface.InitMessage(_("Checking Demi-node feature toggle..."));
     fDemiNodes = GetBoolArg("-deminodes", false);
@@ -878,12 +887,6 @@ bool AppInit2(boost::thread_group& threadGroup)
         // Demi-nodes disabled
         LogPrintf("No Demi-node features selected... skipping...\n");
     }
-
-    if (!CheckDiskSpace())
-        return false;
-
-    if (!strErrors.str().empty())
-        return InitError(strErrors.str());
 
     RandAddSeedPerfmon();
 

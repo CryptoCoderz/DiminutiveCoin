@@ -46,11 +46,12 @@ static const int CADDR_TIME_VERSION = 31402;
 static const int NOBLKS_VERSION_START = 60000;
 static const int NOBLKS_VERSION_END = 60005;
 
-// hard cutoff time for legacy network connections
+// hard cutoff time for legacy/future network connections
 static const int64_t HRD_LEGACY_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
-
-// hard cutoff time for future network connections
 static const int64_t HRD_FUTURE_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
+
+// hard cutoff block height for min-peer relay/sync
+static const int BLOCKHEIGHT_CUTOFF = 2727900;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;

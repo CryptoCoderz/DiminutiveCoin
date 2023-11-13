@@ -227,6 +227,7 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/addrman.h \
     src/base58.h \
     src/bignum.h \
+    src/blockparams.h \
     src/chainparams.h \
     src/chainparamsseeds.h \
     src/checkpoints.h \
@@ -339,6 +340,7 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/editaddressdialog.cpp \
     src/qt/diminutivecoinaddressvalidator.cpp \
+    src/blockparams.cpp \
     src/chainparams.cpp \
     src/version.cpp \
     src/sync.cpp \
