@@ -42,7 +42,7 @@ cd ~; cd ~/DiminutiveCoin/src; chmod a+x obj; chmod a+x leveldb/build_detect_pla
 
 ### Create config file
 ```
-cd ~; sudo ufw allow 16001/tcp; sudo ufw allow 16000/tcp; sudo mkdir ~/.diminutivecoin; cat << "CONFIG" >> ~/.diminutivecoin/DiminutiveCoin.conf
+cd ~; sudo ufw allow 16001/tcp; sudo ufw allow 16000/tcp; sudo mkdir ~/.diminutivecoin; cat << "CONFIG" >> ~/.diminutivecoin/diminutivecoin.conf
 listen=1
 server=1
 daemon=1
@@ -61,7 +61,7 @@ addnode=38.242.255.229:49139
 addnode=176.57.189.38:49139
 
 CONFIG
-chmod 700 ~/.diminutivecoin/DiminutiveCoin.conf; chmod 700 ~/.diminutivecoin; ls -la ~/.diminutivecoin
+chmod 700 ~/.diminutivecoin/diminutivecoin.conf; chmod 700 ~/.diminutivecoin; ls -la ~/.diminutivecoin
 ```
 
 ### Run DiminutiveCoin daemon
