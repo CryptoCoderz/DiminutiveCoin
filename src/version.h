@@ -51,7 +51,7 @@ static const int64_t HRD_LEGACY_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
 static const int64_t HRD_FUTURE_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
 
 // hard cutoff block height for min-peer relay/sync
-static const int BLOCKHEIGHT_CUTOFF = 2727900;
+static const int BLOCKHEIGHT_CUTOFF = 2727950;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;

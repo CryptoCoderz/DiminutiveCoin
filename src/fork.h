@@ -12,12 +12,12 @@ using namespace std;
 /** Genesis Block Height */
 static const int64_t nGenesisHeight = 0;
 /** Velocity toggle block */
-static const int64_t VELOCITY_TOGGLE = 2727900; // Implementation of the Velocity system into the chain.
+static const int64_t VELOCITY_TOGGLE = 2727950; // Implementation of the Velocity system into the chain.
 /** Velocity retarget toggle block */
-static const int64_t VELOCITY_TDIFF = 2727900; // Use Velocity's retargetting method.
+static const int64_t VELOCITY_TDIFF = 2727950; // Use Velocity's retargetting method.
 /** Proof-of-Stake Version 3.0 implementation fork */
-inline bool IsVRX_V3_6(int64_t nTime) { return (nTime > 1696757008); } // ON (TOGGLED Oct 08, 2023 11:14:06 UTC)
+inline bool IsVRX_V3_6(int64_t nTime) { return (nTime > 1696761120); } // ON (TOGGLED Oct 08, 2023 10:32:00 UTC)
 /** VRX difficulty upgrade to v3.6 */
-static const int64_t VRX_V3_6 = 1696757008; // ON (TOGGLED Oct 08, 2023 11:14:06 UTC)
+static const int64_t VRX_V3_6 = 1696761120; // ON (TOGGLED Oct 08, 2023 10:32:00 UTC)
 
 #endif // ESPERS_FORK_H

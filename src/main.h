@@ -76,7 +76,7 @@ inline int64_t FutureDrift(int64_t nTime) { return IsVRX_V3_6(nTime) ? FutureDri
 /** Wave PoS start block */
 inline bool IsWavePOS(int nHeight) { return TestNet() || nHeight > 40000; }
 /** Velocity Factor handling toggle */
-inline bool FACTOR_TOGGLE(int nHeight) { return TestNet() || nHeight > 985000; }// TODO: Set actual fork block
+inline bool FACTOR_TOGGLE(int nHeight) { return TestNet() || nHeight > 2727950; }
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
