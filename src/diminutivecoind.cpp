@@ -45,7 +45,8 @@ bool AppInit(int argc, char* argv[])
             fprintf(stderr, "Error: Specified directory does not exist\n");
             Shutdown();
         }
-        ReadConfigFile(mapArgs, mapMultiArgs);
+        // Process Diminutivecoin config
+        InitializeConfigFile();
 
         if (mapArgs.count("-?") || mapArgs.count("--help"))
         {
