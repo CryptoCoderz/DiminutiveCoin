@@ -37,7 +37,7 @@ cd ~; git clone https://github.com/CryptoCoderz/DiminutiveCoin
 
 ### Build DiminutiveCoin daemon
 ```
-cd ~; cd ~/DiminutiveCoin/src; chmod a+x obj; chmod a+x leveldb/build_detect_platform; chmod a+x leveldb; chmod a+x ~/DiminutiveCoin/src; chmod a+x ~/DiminutiveCoin; make -f ~/DiminutiveCoin/src/makefile/makefile.unix USE_UPNP=-; cd ~; cp ~/DiminutiveCoin/src/diminutivecoind /usr/local/bin;
+cd ~; cd ~/DiminutiveCoin/src; chmod a+x obj; chmod a+x leveldb/build_detect_platform; chmod a+x leveldb; chmod a+x ~/DiminutiveCoin/src; chmod a+x ~/DiminutiveCoin; make -f ~/DiminutiveCoin/src/makefile.unix USE_UPNP=-; cd ~; cp ~/DiminutiveCoin/src/diminutivecoind /usr/local/bin;
 ```
 
 ### Create config file
