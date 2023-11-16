@@ -477,7 +477,10 @@ unsigned int VRX_Retarget(const CBlockIndex* pindexLast, bool fProofOfStake)
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-    /* DarkGravityWave v3 retarget difficulty runs until block 667350 */
+    // Default with VRX
+    retarget = DIFF_VRX;
+
+    /* DarkGravityWave v3 retarget difficulty runs until block 2727950 */
     if(pindexBest->nHeight < VELOCITY_TDIFF)
     {
         retarget = DIFF_DGW;
