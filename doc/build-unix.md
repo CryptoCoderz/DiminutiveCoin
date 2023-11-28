@@ -42,7 +42,7 @@ cd ~; cd ~/DiminutiveCoin/src; chmod a+x obj; chmod a+x leveldb/build_detect_pla
 
 ### Create config file
 ```
-cd ~; sudo ufw allow 16001/tcp; sudo ufw allow 16000/tcp; sudo mkdir ~/.diminutivecoin; cat << "CONFIG" >> ~/.diminutivecoin/diminutivecoin.conf
+cd ~; sudo ufw allow 49139/tcp; sudo ufw allow 49122/tcp; sudo mkdir ~/.diminutivecoin; cat << "CONFIG" >> ~/.diminutivecoin/diminutivecoin.conf
 listen=1
 server=1
 daemon=1
@@ -52,8 +52,8 @@ maxconnections=500
 testnet=0
 rpcuser=dimiuser
 rpcpassword=SomeCrazyVeryVerySecurePasswordHere
-rpcport=16000
-port=16001
+rpcport=49122
+port=49139
 rpcconnect=127.0.0.1
 rpcallowip=127.0.0.1
 addnode=75.119.140.224:49139
