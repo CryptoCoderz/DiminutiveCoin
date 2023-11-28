@@ -164,7 +164,8 @@ int main(int argc, char *argv[])
                               QString("Error: Specified data directory \"%1\" does not exist.").arg(QString::fromStdString(mapArgs["-datadir"])));
         return 1;
     }
-    ReadConfigFile(mapArgs, mapMultiArgs);
+    // Process Diminutivecoin config
+    InitializeConfigFile();
 
     // Application identification (must be set before OptionsModel is initialized,
     // as it is used to locate QSettings)

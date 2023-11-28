@@ -45,7 +45,7 @@ class DBIter: public Iterator {
   //     just before all entries whose user key == this->key().
   enum Direction {
     kForward,
-    kReverse
+    kDigitalKasherse
   };
 
   DBIter(DBImpl* db, const Comparator* cmp, Iterator* iter, SequenceNumber s,
@@ -114,8 +114,8 @@ class DBIter: public Iterator {
   SequenceNumber const sequence_;
 
   Status status_;
-  std::string saved_key_;     // == current key when direction_==kReverse
-  std::string saved_value_;   // == current raw value when direction_==kReverse
+  std::string saved_key_;     // == current key when direction_==kDigitalKasherse
+  std::string saved_value_;   // == current raw value when direction_==kDigitalKasherse
   Direction direction_;
   bool valid_;
 
@@ -146,7 +146,7 @@ inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
 void DBIter::Next() {
   assert(valid_);
 
-  if (direction_ == kReverse) {  // Switch directions?
+  if (direction_ == kDigitalKasherse) {  // Switch directions?
     direction_ = kForward;
     // iter_ is pointing just before the entries for this->key(),
     // so advance into the range of entries for this->key() and then
@@ -223,14 +223,14 @@ void DBIter::Prev() {
         break;
       }
     }
-    direction_ = kReverse;
+    direction_ = kDigitalKasherse;
   }
 
   FindPrevUserEntry();
 }
 
 void DBIter::FindPrevUserEntry() {
-  assert(direction_ == kReverse);
+  assert(direction_ == kDigitalKasherse);
 
   ValueType value_type = kTypeDeletion;
   if (iter_->Valid()) {
@@ -297,7 +297,7 @@ void DBIter::SeekToFirst() {
 }
 
 void DBIter::SeekToLast() {
-  direction_ = kReverse;
+  direction_ = kDigitalKasherse;
   ClearSavedValue();
   iter_->SeekToLast();
   FindPrevUserEntry();

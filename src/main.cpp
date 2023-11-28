@@ -6,6 +6,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/bind.hpp>// TODO: Update handling for newer boost (deprecated)
 
 #include "chainparams.h"
 #include "checkpoints.h"
@@ -15,6 +16,8 @@
 #include "net.h"
 #include "txdb.h"
 #include "txmempool.h"
+#include "velocity.h"
+#include "deminode/deminet.h"
 #include "ui_interface.h"
 
 using namespace std;
@@ -38,16 +41,12 @@ CTxMemPool mempool;
 map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
-CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
-
 int nCoinbaseMaturity = 75;// Blocks to confirm if mining pow pos
 int nStakeMinConfirmations =  150; // 150 Minimum Block confirms 
 unsigned int nStakeMinAge =  2 * 60 * 60; // 2 Hour Minimum Stake 
 unsigned int nModifierInterval = 5 * 60; // time to elapse before new modifier is computed
-
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
-static const int64_t nTargetTimespan =  10 * 75; //750 Seconds 12.5 Minute Adjust Retagret 
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
@@ -56,6 +55,8 @@ int64_t nTimeBestReceived = 0;
 bool fImporting = false;
 bool fReindex = false;
 bool fHaveGUI = false;
+bool fRollingCheckpoint = false;
+std::string GetRelayPeerAddr = "127.0.0.1";
 
 struct COrphanBlock {
     uint256 hashBlock;
@@ -676,7 +677,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CTransaction &tx, bool fLimitFree,
                           error("AcceptToMemoryPool : too many sigops %s, %d > %d",
                                 hash.ToString(), nSigOps, MAX_TX_SIGOPS));
 
-        int64_t nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
+        int64_t nFees = tx.GetValueMapIn(mapInputs)-tx.GetValueOut();
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
         // Don't accept it if it can't get into a block
@@ -949,97 +950,6 @@ void static PruneOrphanBlocks()
         mapOrphanBlocks.erase(hash);
     }
 }
-
-// miner's coin base reward
-int64_t GetProofOfWorkReward(int64_t nFees, int nHeight)
-{
-    int64_t nSubsidy = 0 * COIN; //DiminutiveCoin Protocol rewards 0.01 DIMI curve up and down to 0.04 DIMI
-
-    if(nHeight == 3)
-    {
-        nSubsidy = 11000 * COIN;
-    }
-    	else if((nHeight > 12) && (nHeight % 2))
-    {
-    	nSubsidy = 0.04 * COIN;
-    }
-        else if(nHeight > 12)
-    {
-    	nSubsidy = 0.01 * COIN;
-    }
-    
-    nSubsidy >>= (nHeight / 500000);
-    LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d nHeight=%d\n", FormatMoney(nSubsidy), nSubsidy, nHeight);
-
-    // hardCap v2.2
-    if(pindexBest->nMoneySupply > MAX_MONEY)
-    {
-        nSubsidy = 0;
-        LogPrint("MINEOUT", "GetProofOfWorkReward(): create=%s nFees=%d\n", FormatMoney(nFees), nFees);
-        return nSubsidy + nFees;
-    }
-    return nSubsidy + nFees;
-}
-
-
-
-
-// miner's coin stake reward
-int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight)
-{
-    int64_t nSubsidy= 0 * COIN;
-    
-    if(IsWavePOS(nHeight)) //Even blocks rewards 0.01 DIMI curve up and down 0.00001 DIMI 
-   
-{
-    	if(nHeight % 2)
-    	{
-        	nSubsidy = 0.00001 * COIN;
-    	}
-    	else
-    	{
-        	nSubsidy = 0.01 * COIN;
-    	}
-    	
-	}
-	
-	else
-	{
-		nSubsidy = 0.01 * COIN;
-    }
-
-    nSubsidy >>= (nHeight / 1000000);
-    LogPrint("creation", "GetProofOfStakeReward(): create=%s nCoinAge=%d nHeight=%d\n", FormatMoney(nSubsidy), nCoinAge, nHeight);
-
-    // hardCap v2.2
-    if(pindexBest->nMoneySupply > MAX_MONEY)
-    {
-        nSubsidy = 0.0;
-        LogPrint("MINEOUT", "GetProofOfStakeReward(): create=%s nFees=%d\n", FormatMoney(nFees), nFees);
-        return nSubsidy + nFees;
-    }
-
-    return nSubsidy + nFees;
-}
-
-//         
-//    Diminutive Wave POW / POS  Protocol 
-//        Peak POW     Next Peak POW
-//         #            #
-//        # #          # #
-//       #   #        #   #
-//      #     #      #     #
-//     #       #    #       #
-//    #         #  #         # Graph Above  POW   #
-//  --------------Midpoint breach----            # #
-//   #           ##           # Graph Below POS   #
-//    #         #  #         #
-//     #       #    #       #
-//      #     #      #     #
-//        # #          #  #
-//         #            #
-//	 Peak POS      Next Peak POS  
-//   Block POW  1 - 2 reward Loop + Block POS 1 - 2 reward Loop with a halving sub 
       
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
@@ -1047,64 +957,6 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
         pindex = pindex->pprev;
     return pindex;
-}
-
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
-{
-    // DarkGravityWave v3.1, written by Evan Duffield - evan@dashpay.io
-    // Modified & revised by bitbandi for PoW support [implementation (fork) cleanup done by CryptoCoderz]
-    const CBigNum nProofOfWorkLimit = fProofOfStake ? bnProofOfStakeLimit : Params().ProofOfWorkLimit();
-    const CBlockIndex *BlockLastSolved = GetLastBlockIndex(pindexLast, fProofOfStake);
-    const CBlockIndex *BlockReading = BlockLastSolved;
-    int64_t nActualTimespan = 0;
-    int64_t LastBlockTime = 0;
-    int64_t PastBlocksMin = 7;
-    int64_t PastBlocksMax = 24;
-    int64_t CountBlocks = 0;
-    int64_t nTargetSpacing = GetTargetSpacing(pindexLast->nHeight);
-    CBigNum PastDifficultyAverage;
-    CBigNum PastDifficultyAveragePrev;
-
-            if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMax) {
-                return nProofOfWorkLimit.GetCompact();
-            }
-
-            for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
-                if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
-                CountBlocks++;
-
-                if(CountBlocks <= PastBlocksMin) {
-                    if (CountBlocks == 1) { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
-                    else { PastDifficultyAverage = ((PastDifficultyAveragePrev * CountBlocks) + (CBigNum().SetCompact(BlockReading->nBits))) / (CountBlocks + 1); }
-                    PastDifficultyAveragePrev = PastDifficultyAverage;
-                }
-
-                if(LastBlockTime > 0){
-                    int64_t Diff = (LastBlockTime - BlockReading->GetBlockTime());
-                    nActualTimespan += Diff;
-                }
-                LastBlockTime = BlockReading->GetBlockTime();
-                BlockReading = GetLastBlockIndex(BlockReading->pprev, fProofOfStake);
-            }
-
-            CBigNum bnNew(PastDifficultyAverage);
-
-            int64_t _nTargetTimespan = CountBlocks * nTargetSpacing;
-
-            if (nActualTimespan < _nTargetTimespan/3)
-                nActualTimespan = _nTargetTimespan/3;
-            if (nActualTimespan > _nTargetTimespan*3)
-                nActualTimespan = _nTargetTimespan*3;
-
-            // Retarget
-            bnNew *= nActualTimespan;
-            bnNew /= _nTargetTimespan;
-
-            if (bnNew > nProofOfWorkLimit){
-                bnNew = nProofOfWorkLimit;
-            }
-
-            return bnNew.GetCompact();
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -1217,7 +1069,7 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
 
 
 bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool,
-                               bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
+                               bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid) const
 {
     // FetchInputs can return false either because we just haven't seen some inputs
     // (in which case the transaction should be stored as an orphan)
@@ -1300,7 +1152,7 @@ const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& in
     return txPrev.vout[input.prevout.n];
 }
 
-int64_t CTransaction::GetValueIn(const MapPrevTx& inputs) const
+int64_t CTransaction::GetValueMapIn(const MapPrevTx& inputs) const
 {
     if (IsCoinBase())
         return 0;
@@ -1535,7 +1387,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (nSigOps > MAX_BLOCK_SIGOPS)
                 return DoS(100, error("ConnectBlock() : too many sigops"));
 
-            int64_t nTxValueIn = tx.GetValueIn(mapInputs);
+            int64_t nTxValueIn = tx.GetValueMapIn(mapInputs);
             int64_t nTxValueOut = tx.GetValueOut();
             nValueIn += nTxValueIn;
             nValueOut += nTxValueOut;
@@ -1610,18 +1462,111 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
 {
     LogPrintf("REORGANIZE\n");
 
-    // Find the fork
+    // Set values
     CBlockIndex* pfork = pindexBest;
-    CBlockIndex* plonger = pindexNew;
-    while (pfork != plonger)
+    CBlockIndex* pMerge = pindexNew;
+    CBlockIndex* pMergeIndex = pMerge;
+    int64_t nMergeDepth = 0;
+    int64_t pHeightMerge = pMerge->nHeight;
+    int64_t nHeightShorter = 0;
+    int64_t nReorgMax = 0;
+    int64_t diffFactor = 0;
+    bool fMergeReverse = false;
+    bool fRollBackCall = fRollbacktoBlock;
+
+    // Turn off BackToBlock toggle if on
+    fRollbacktoBlock = false;
+
+    // Find reorganize direction and set values
+    // (Espers [ESP] is not directionally bias)
+    if (pMerge->nHeight > pfork->nHeight) {
+        // Set directionally bias values
+        nMergeDepth = (pMerge->nHeight - pfork->nHeight);
+        nHeightShorter = pfork->nHeight;
+        nReorgMax = (pfork->nHeight - BLOCK_REORG_MAX_DEPTH);
+    } else {
+        // Set directionally bias values
+        nMergeDepth = (pfork->nHeight - pMerge->nHeight);
+        fMergeReverse = true;
+        nHeightShorter = pMerge->nHeight;
+        nReorgMax = (pMerge->nHeight - BLOCK_REORG_MAX_DEPTH);
+    }
+
+
+    // Ensure reorganize direction sanity
+    if (fMergeReverse) {
+        // Only allow reverse reorgs from Demi-nodes
+        // (Override for back-to-block command)
+        if((fDemiPeerRelay(GetRelayPeerAddr) && fDemiNodes) || fRollBackCall) {
+            LogPrintf("Reorganize() : Authorized a reverse-reorganize, now executing...\n");
+        } else {
+            return error("Reorganize() : Denied a reverse-reorganize - Not authorized!");
+        }
+    }
+
+    // Ensure reorganize depth sanity
+    if (nMergeDepth > BLOCK_REORG_MAX_DEPTH) {
+        // Only allow deep reorgs from Demi-nodes or during back-to-block
+        // TODO: allow override as set in config file
+        if((fDemiPeerRelay(GetRelayPeerAddr) && fDemiNodes) || fRollBackCall) {
+            nReorgMax -= BLOCK_REORG_OVERRIDE_DEPTH;
+            if (nMergeDepth > BLOCK_REORG_THRESHOLD) {
+                // Back-to-block bypasses normal threshold as it might not be set
+                if (fRollBackCall) {
+                    nReorgMax = (nNewHeight-1);
+                    LogPrintf("Reorganize() : Rolling back to block: %u \n", nNewHeight);
+                } else {
+                    return error("Reorganize() : Threshold depth exceeded");
+                }
+            }
+        } else {
+            return error("Reorganize() : Maximum depth exceeded");
+        }
+    }
+
+    // Set rolling checkpoint status, just in case we haven't accepted any blocks yet
+    // and/or in case we're reverse reorganizing
+    // TODO: move this to reorganize direction check, then toggle this only if
+    // no previous blocks were accepted yet (no previous rolling checkpoint)
+    fRollingCheckpoint = RollingCheckpoints(nHeightShorter, pfork);
+
+    // Get a checkpoint for quality assurance
+    if (fRollingCheckpoint) {
+        // Verify chain quality
+        while (pHeightMerge > RollingHeight)
+        {
+            if(pMergeIndex->GetBlockHash() == RollingBlock) {
+                break;
+            }
+            pMergeIndex = pMergeIndex->pprev;
+            pHeightMerge --;
+        }
+        if(pMergeIndex->GetBlockHash() != RollingBlock) {
+            return error("Reorganize() : Chain quality failed, blockhash is invalid");
+        }
+    } else {
+        // Could not obtain checkpoint
+        return error("Reorganize() : Chain quality failed, blockheight is invalid");
+    }
+
+    // Find the fork
+    while (pfork != pMerge)
     {
-        while (plonger->nHeight > pfork->nHeight)
-            if (!(plonger = plonger->pprev))
+        diffFactor ++;
+        while (pMerge->nHeight > pfork->nHeight)
+            if (!(pMerge = pMerge->pprev))
                 return error("Reorganize() : plonger->pprev is null");
-        if (pfork == plonger)
+        if (pfork == pMerge)
             break;
         if (!(pfork = pfork->pprev))
             return error("Reorganize() : pfork->pprev is null");
+    }
+
+    // Verify Supply Sanity of connecting branch
+    if(!bIndex_Factor(pfork, pMerge, diffFactor))
+    {
+        // Invalid branch coin supply
+        return error("Reorganize() : Invalid branch coin supply");
     }
 
     // List of what to disconnect
@@ -1633,30 +1578,38 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     vector<CBlockIndex*> vConnect;
     for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
         vConnect.push_back(pindex);
+
     reverse(vConnect.begin(), vConnect.end());
 
     LogPrintf("REORGANIZE: Disconnect %u blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString(), pindexBest->GetBlockHash().ToString());
     LogPrintf("REORGANIZE: Connect %u blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString(), pindexNew->GetBlockHash().ToString());
 
-    // Disconnect shorter branch
+    // Disconnect current branch
     list<CTransaction> vResurrect;
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
     {
         CBlock block;
         if (!block.ReadFromDisk(pindex))
+        {
             return error("Reorganize() : ReadFromDisk for disconnect failed");
+        }
         if (!block.DisconnectBlock(txdb, pindex))
-            return error("Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString());
-
+        {
+            return error("Reorganize() : DisconnectBlock failed for block: %s ", pindex->GetBlockHash().ToString());
+        }
         // Queue memory transactions to resurrect.
         // We only do this for blocks after the last checkpoint (reorganisation before that
         // point should only happen with -reindex/-loadblock, or a misbehaving peer.
         BOOST_REVERSE_FOREACH(const CTransaction& tx, block.vtx)
-            if (!(tx.IsCoinBase() || tx.IsCoinStake()) && pindex->nHeight > Checkpoints::GetTotalBlocksEstimate())
+        {
+            if (!(tx.IsCoinBase() || tx.IsCoinStake()) && pindex->nHeight > nReorgMax)
+            {
                 vResurrect.push_front(tx);
+            }
+        }
     }
 
-    // Connect longer branch
+    // Connect merging branch
     vector<CTransaction> vDelete;
     for (unsigned int i = 0; i < vConnect.size(); i++)
     {
@@ -1667,13 +1620,24 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
         if (!block.ConnectBlock(txdb, pindex))
         {
             // Invalid block
-            return error("Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString());
+            return error("Reorganize() : ConnectBlock failed for block: %s", pindex->GetBlockHash().ToString());
+        }
+        if(Velocity_check(pindex->nHeight))
+        {
+            // Announce Velocity constraint failure
+            if(!Velocity(pindex->pprev, &block, true))
+            {
+                // Invalid data within block
+                return error("Reorganize() : Velocity failed at height: %u", pindex->nHeight);
+            }
         }
 
         // Queue memory transactions to delete
         BOOST_FOREACH(const CTransaction& tx, block.vtx)
             vDelete.push_back(tx);
     }
+
+    // Write new best chain hash
     if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
         return error("Reorganize() : WriteHashBestChain failed");
 
@@ -1681,12 +1645,12 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     if (!txdb.TxnCommit())
         return error("Reorganize() : TxnCommit failed");
 
-    // Disconnect shorter branch
+    // Disconnect current branch
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
         if (pindex->pprev)
             pindex->pprev->pnext = NULL;
 
-    // Connect longer branch
+    // Connect merging branch
     BOOST_FOREACH(CBlockIndex* pindex, vConnect)
         if (pindex->pprev)
             pindex->pprev->pnext = pindex;
@@ -2070,6 +2034,16 @@ bool CBlock::AcceptBlock()
     else if (nVersion > 1)
         return DoS(100, error("AcceptBlock() : reject too new nVersion = %d", nVersion));
 
+    // Check block against Velocity parameters
+    if(Velocity_check(nHeight))
+    {
+        // Announce Velocity constraint failure
+        if(!Velocity(pindexPrev, this, true))
+        {
+            return DoS(100, error("AcceptBlock() : Velocity rejected block %d, required parameters not met", nHeight));
+        }
+    }
+
     if (IsProofOfWork() && nHeight > Params().LastPOWBlock())
         return DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
 
@@ -2143,6 +2117,10 @@ bool CBlock::AcceptBlock()
             if (nBestHeight > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
                 pnode->PushInventory(CInv(MSG_BLOCK, hash));
     }
+
+    // Set rolling checkpoint status
+    // TODO: Clean up to prevent redundant calls beween reorganize and AcceptBlock
+    fRollingCheckpoint = RollingCheckpoints(nHeight, pindexPrev);
 
     return true;
 }
@@ -2239,12 +2217,26 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     }
 
     // Preliminary checks
-    if (!pblock->CheckBlock())
+    if (!pblock->CheckBlock()) {
         return error("ProcessBlock() : CheckBlock FAILED");
+    }
+
+    // Set peer address for AcceptBlock() checks
+    //
+    // Only set peer IP if we receive a block from
+    // a peer. For self-mined blocks we self-set
+    // our IP during block generation.
+    if(pfrom != NULL) {
+        GetRelayPeerAddr = pfrom->addrName;
+    }
 
     // If we don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
+        //if(!fDemiPeerRelay(GetRelayPeerAddr)) {
+        //    return error("ProcessBlock() : Demi-node orphan blocks are not accepted from peer: %s", pfrom->addrName);
+        //}
+
         LogPrintf("ProcessBlock: ORPHAN BLOCK %lu, prev=%s\n", (unsigned long)mapOrphanBlocks.size(), pblock->hashPrevBlock.ToString());
 
         // Accept orphans as long as there is a node to request its parents from
@@ -2284,8 +2276,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     }
 
     // Store to disk
-    if (!pblock->AcceptBlock())
+    if (!pblock->AcceptBlock()) {
         return error("ProcessBlock() : AcceptBlock FAILED");
+    }
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;
@@ -2312,6 +2305,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         }
         mapOrphanBlocksByPrev.erase(hashPrev);
     }
+
+    // Velocity is checked in AcceptBlock()
+    //
 
     LogPrintf("ProcessBlock: ACCEPTED\n");
 
@@ -2819,6 +2815,31 @@ void static ProcessGetData(CNode* pfrom)
                     }
                 }
             }
+            else if (inv.type == MSG_DEMIBLOCK)
+            {
+                // Send block from disk
+                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
+                if (mi != mapBlockIndex.end())
+                {
+                    CBlock block;
+                    block.ReadFromDisk((*mi).second);
+
+                    // previous versions could accept sigs with high s
+                    if (!IsCanonicalBlockSignature(&block, true)) {
+                        bool ret = EnsureLowS(block.vchBlockSig);
+                        assert(ret);
+                    }
+
+                    // Send the requested block to peer
+                    pfrom->PushMessage("demiblock", block);
+                } else {
+                    // Send best available block to peer
+                    map<uint256, CBlockIndex*>::iterator mi2 = mapBlockIndex.find(pindexBest->GetBlockHash());
+                    CBlock block;
+                    block.ReadFromDisk((*mi2).second) ;
+                    pfrom->PushMessage("demiblock", block);
+                }
+            }
             else if (inv.IsKnownType())
             {
                 // Send stream from relay memory
@@ -2892,12 +2913,52 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CAddress addrFrom;
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-        if (pfrom->nVersion < MIN_PEER_PROTO_VERSION)
+        if (pfrom->nVersion < PROTOCOL_VERSION)
         {
-            // disconnect from peers older than this proto version
-            LogPrintf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString(), pfrom->nVersion);
-            pfrom->fDisconnect = true;
-            return false;
+            if(pindexBest->GetBlockTime() > HRD_LEGACY_CUTOFF)
+            {
+                // disconnect from peers older than legacy cutoff allows : Disconnect message 02
+                LogPrintf("partner %s using obsolete version %i; disconnecting DCM:02\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+            else if(pfrom->nVersion < MIN_PEER_PROTO_VERSION)
+            {
+                // disconnect from peers older than this proto version : Disconnect message 01
+                LogPrintf("partner %s using obsolete version %i; disconnecting DCM:01\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+            else if(pindexBest->nHeight >= BLOCKHEIGHT_CUTOFF)
+            {
+                // disconnect from peers older than min-peer version after this block : Disconnect message 00
+                LogPrintf("partner %s is not a viable sync/relay peer %i; disconnecting DCM:00\n", pfrom->addr.ToString(), pfrom->nVersion);
+                pfrom->fDisconnect = true;
+                return false;
+            }
+        }
+        else
+        {
+            if(pfrom->nVersion == (PROTOCOL_VERSION))
+            {
+                // log successfull same-version-peer connection : Connection attempt message 02
+                LogPrintf("partner %s using acceptable same version %i; connecting CAM:02\n", pfrom->addr.ToString(), pfrom->nVersion);
+            }
+            else
+            {
+                if(pindexBest->GetBlockTime() < HRD_FUTURE_CUTOFF)
+                {
+                    // log successfull future-peer-version connection : Connection attempt message 01
+                    LogPrintf("partner %s using acceptable future version %i; connecting CAM:01\n", pfrom->addr.ToString(), pfrom->nVersion);
+                }
+                else
+                {
+                    // disconnect from peers outside of future cutoff window (invalid versions) : Disconnect message 03
+                    LogPrintf("partner %s using invalid future version %i; disconnecting DCM:03\n", pfrom->addr.ToString(), pfrom->nVersion);
+                    pfrom->fDisconnect = true;
+                    return false;
+                }
+            }
         }
 
         if (pfrom->nVersion == 10300)
@@ -3573,9 +3634,43 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         }
 
         // Start block sync
+        //
+        // Demi-nodes v0.6 alpha
+        //
         if (pto->fStartSync && !fImporting && !fReindex) {
-            pto->fStartSync = false;
-            PushGetBlocks(pto, pindexBest, uint256(0));
+            // Espers Demi-node rewrite...
+            // Don't send blind get blocks message anymore.
+            // Instead we wait to accumulate connections
+            // then we gather a network concensus of what should
+            // be deemed the main chain. We sync to this chain.
+            // There are overrides and exceptions, please consult
+            // the Demi-node documentation for more information.
+            //
+            LogPrintf("Starting Sync Request\n");
+
+            if(!fDemiNodes) {
+                pto->fStartSync = false;
+                PushGetBlocks(pto, pindexBest, uint256(0));
+                LogPrintf("NON-Deminode request started\n");
+            } else {
+                if(pto->nVersion < 60006) {
+                    // Syncing from legacy peers is no longer supported.
+                    // Later itterations of Demi-nodes will be able
+                    // to re-activate this funtionality with advanced
+                    // concensus handling.
+                } else {
+                    // TODO: add     || -demilocksync
+                    // Ensure handling of demi and standard failover
+                    //
+                    // Sync only if peer is a registered Demi-node
+                    // This is a limitation only of v0.6
+                    if(fDemiPeerRelay(pto->addrName)) {
+                        pto->fStartSync = false;
+                        PushGetBlocks(pto, pindexBest, uint256(0));
+                        LogPrintf("Deminode request started\n");
+                    }
+                }
+            }
         }
 
         // Resend wallet transactions that haven't gotten in a block yet

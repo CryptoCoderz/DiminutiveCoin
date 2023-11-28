@@ -56,7 +56,8 @@ public:
         pchMessageStart[3] = 0x56;
         nDefaultPort = 49139;
         nRPCPort = 49122;
-	bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20);
+        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20);
+        bnProofOfStakeLimit = CBigNum(~uint256(0) >> 20);
 
         // Build the genesis block.
 	const char* pszTimestamp = "Diminitivevault needs a new chain sha256 failed 20200121"; //
@@ -90,7 +91,7 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = list_of(0xE1)(0xA3)(0x2B)(0x3E);
         */
         /** REQUIRED IN QT 5.6+  (To compile on Qt5.5.1 and lower comment out below) */
-	base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 32);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 32);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 30);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1, 181);
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0xAD)(0x1B)(0x12)(0xA4).convert_to_container<std::vector<unsigned char> >();
@@ -102,7 +103,7 @@ public:
 
         convertSeed6(vFixedSeeds, pnSeed6_main, ARRAYLEN(pnSeed6_main));
 
-	nLastPOWBlock = 9999999999;
+        nLastPOWBlock = 9999999999;
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }
@@ -134,6 +135,7 @@ public:
         pchMessageStart[2] = 0xd5;
         pchMessageStart[3] = 0x21;
         bnProofOfWorkLimit = CBigNum(~uint256(0) >> 8);
+        bnProofOfStakeLimit = CBigNum(~uint256(0) >> 20);
         nDefaultPort = 4913;
         nRPCPort = 4912;
 	//nDefaultPort = 1600;

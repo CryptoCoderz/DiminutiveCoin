@@ -125,7 +125,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nNetworkWeight = GetPoSKernelPS();
     bool staking = nLastCoinStakeSearchInterval && nWeight;
-    uint64_t nExpectedTime = staking ? (GetTargetSpacing(nBestHeight) * nNetworkWeight / nWeight) : 0;
+    uint64_t nExpectedTime = staking ? (BLOCK_SPACING * nNetworkWeight / nWeight) : 0;
 
     Object obj;
 
@@ -588,7 +588,7 @@ Value getblocktemplate(const Array& params, bool fHelp)
         bool fInvalid = false;
         if (tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
         {
-            entry.push_back(Pair("fee", (int64_t)(tx.GetValueIn(mapInputs) - tx.GetValueOut())));
+            entry.push_back(Pair("fee", (int64_t)(tx.GetValueMapIn(mapInputs) - tx.GetValueOut())));
 
             Array deps;
             BOOST_FOREACH (MapPrevTx::value_type& inp, mapInputs)

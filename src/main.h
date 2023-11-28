@@ -11,8 +11,8 @@
 #include "txmempool.h"
 #include "net.h"
 #include "hashblock.h"
-//#include "script.h"
-//#include "scrypt.h"
+#include "fork.h"
+#include "mining.h"
 
 #include <limits>
 #include <list>
@@ -47,17 +47,36 @@ static const unsigned int MAX_INV_SZ = 50000;
 static const int64_t MIN_TX_FEE = 0.00000250 * COIN;
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying) */
 static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
+/** Minimum TX count (for relaying) */
+static const int64_t MIN_TX_COUNT = 0;
+/** Minimum TX value (for relaying) */
+static const int64_t MIN_TX_VALUE = MIN_RELAY_TX_FEE;
 /** No amount larger than this (in satoshi) is valid */
 static const int64_t MAX_MONEY = 200000 * COIN; // 15 million
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
-/** FutureDrift parameters */
-inline int64_t FutureDrift(int64_t nTime) { return nTime + 30 * 60; }
-/** Block target spacing defines */
-inline unsigned int GetTargetSpacing(int nHeight) {return 75; }
-
+/** Number of blocks that can be requested at any given time from a single peer. */
+static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
+/** Timeout in seconds before considering a block download peer unresponsive. */
+static const unsigned int BLOCK_DOWNLOAD_TIMEOUT = 60;
+/** Maximum block reorganize depth (consider else an invalid fork) */
+static const int BLOCK_REORG_MAX_DEPTH = 1;
+/** Maximum block reorganize depth override (enabled using demi-nodes) */
+static int BLOCK_REORG_OVERRIDE_DEPTH = 0;
+/** Combined Maximum block reorganize depth (consider else an invalid fork) */
+static int BLOCK_REORG_THRESHOLD = BLOCK_REORG_MAX_DEPTH + BLOCK_REORG_OVERRIDE_DEPTH;
+/** Depth for rolling checkpoing block */
+static const int BLOCK_TEMP_CHECKPOINT_DEPTH = 120;
+/** FutureDrift parameters */ // inline int64_t FutureDrift(int64_t nTime) { return nTime + 30 * 60; }
+inline int64_t TimeDrift() { return 30 * 60; } // Default time drift window
+inline int64_t FutureDriftV1(int64_t nTime) { return nTime + TimeDrift(); } // Initial future drift | Protocol-v2
+inline int64_t FutureDriftV2(int64_t nTime) { return nTime + (TimeDrift() / 10); } // Tightened future drift | VRX_V3.6
+inline int64_t FutureDrift(int64_t nTime) { return IsVRX_V3_6(nTime) ? FutureDriftV2(nTime) : FutureDriftV1(nTime); }
+/** Wave PoS start block */
 inline bool IsWavePOS(int nHeight) { return TestNet() || nHeight > 40000; }
+/** Velocity Factor handling toggle */
+inline bool FACTOR_TOGGLE(int nHeight) { return TestNet() || nHeight > 2727950; }
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -78,6 +97,7 @@ extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockSize;
 extern int64_t nLastCoinStakeSearchInterval;
 extern const std::string strMessageMagic;
+extern std::string GetRelayPeerAddr;
 extern int64_t nTimeBestReceived;
 extern bool fImporting;
 extern bool fReindex;
@@ -312,7 +332,7 @@ public:
         @return	Sum of value of all inputs (scriptSigs)
         @see CTransaction::FetchInputs
      */
-    int64_t GetValueIn(const MapPrevTx& mapInputs) const;
+    int64_t GetValueMapIn(const MapPrevTx& mapInputs) const;
 
     bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
     {
@@ -390,7 +410,7 @@ public:
      @return	Returns true if all inputs are in txdb or mapTestPool
      */
     bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
-                     bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
+                     bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid) const;
 
     /** Sanity check previous transactions, then, if all checks succeed,
         mark them as spent by this transaction.

@@ -71,6 +71,7 @@ static const char alphanum[] =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
       "abcdefghijklmnopqrstuvwxyz";
 
+// Standard Arguments/toggles
 map<string, string> mapArgs;
 map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
@@ -83,6 +84,11 @@ string strMiscWarning;
 bool fNoListen = false;
 bool fLogTimestamps = false;
 volatile bool fReopenDebugLog = false;
+//Rollback to block
+string strRollbackToBlock = "";
+bool fRollbacktoBlock = false;
+//Demi-node handling
+bool fDemiNodes = false;
 
 // Init OpenSSL library multithreading support
 static CCriticalSection** ppmutexOpenSSL;
@@ -910,12 +916,19 @@ bool WildcardMatch(const string& str, const string& mask)
     return WildcardMatch(str.c_str(), mask.c_str());
 }
 
-
-
-
-
-
-
+bool ParseInt32(const std::string& str, int32_t *out)
+{
+    char *endp = NULL;
+    errno = 0; // strtol will not set errno if valid
+    long int n = strtol(str.c_str(), &endp, 10);
+    if(out) *out = (int)n;
+    // Note that strtol returns a *long int*, so even if strtol doesn't report a over/underflow
+    // we still have to check that the returned value is within the range of an *int32_t*. On 64-bit
+    // platforms the size of these types may be different.
+    return endp && *endp == 0 && !errno &&
+        n >= std::numeric_limits<int32_t>::min() &&
+        n <= std::numeric_limits<int32_t>::max();
+}
 
 static std::string FormatException(std::exception* pex, const char* pszThread)
 {
@@ -1028,45 +1041,43 @@ boost::filesystem::path GetConfigFile()
     return pathConfigFile;
 }
 
-void ReadConfigFile(map<string, string>& mapSettingsRet,
+void BuildConfigFile()
+{
+    // TODO: remove boost in favor of C++11 file lookup/handling
+    boost::filesystem::path ConfPath;
+    ConfPath = GetDataDir() / "diminutivecoin.conf";
+    FILE* ConfFile = fopen(ConfPath.string().c_str(), "w");
+    fprintf(ConfFile, "listen=1\n");
+    fprintf(ConfFile, "server=1\n");
+    fprintf(ConfFile, "deminodes=1\n");
+    fprintf(ConfFile, "demimaxdepth=200\n");
+    fprintf(ConfFile, "maxconnections=500\n");
+    fprintf(ConfFile, "rpcuser=yourusername\n");
+
+    char s[34];
+    for (int i = 0; i < 34; ++i)
+    {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    std::string str(s, 34);
+    fprintf(ConfFile, "rpcpassword=%s\n", str.c_str());
+    fprintf(ConfFile, "port=16001\n");
+    fprintf(ConfFile, "rpcport=16000\n");
+    fprintf(ConfFile, "rpcconnect=127.0.0.1\n");
+    fprintf(ConfFile, "rpcallowip=127.0.0.1\n");
+    fprintf(ConfFile, "addnode=127.0.0.1:16001\n");
+    fclose(ConfFile);
+}
+
+void StreamConfigFile(map<string, string>& mapSettingsRet,
                     map<string, vector<string> >& mapMultiSettingsRet)
 {
-    int confLoop = 0;
-    injectConfig:
-    boost::filesystem::ifstream streamConfig(GetConfigFile());
-    if (!streamConfig.good())
-    {
-        boost::filesystem::path ConfPath;
-               ConfPath = GetDataDir() / "diminutivecoin.conf";
-               FILE* ConfFile = fopen(ConfPath.string().c_str(), "w");
-               fprintf(ConfFile, "maxconnections=24\n");
-               fprintf(ConfFile, "rpcuser=DiminutiveWalletUser\n");
-
-               char s[32];
-               for (int i = 0; i < 32; ++i)
-               {
-                   s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-               }
-
-std::string str(s);
-std::string rpcpass = "rpcpassword=" + str + "\n";
-               fclose(ConfFile);
-
-               // Returns our config path, created config file is NOT loaded first time...
-               // Wallet will need to be reloaded before config file is properly read...
-               return ;
-    }
-
-    // loop back and load config for initial generation
-    if (confLoop < 1)
-    {
-        ++confLoop;
-        goto injectConfig;
-    }
-
     set<string> setOptions;
     setOptions.insert("*");
 
+    // TODO: remove boost in favor of C++11 file lookup/handling
+    boost::filesystem::ifstream streamConfig(GetConfigFile());
     for (boost::program_options::detail::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
     {
         // Don't overwrite existing settings so command line settings override diminutivecoin.conf
@@ -1079,8 +1090,30 @@ std::string rpcpass = "rpcpassword=" + str + "\n";
         }
         mapMultiSettingsRet[strKey].push_back(it->value[0]);
     }
+}
+
+void ReadConfigFile()
+{
+    // Stream Conf file data
+    StreamConfigFile(mapArgs, mapMultiArgs);
     // If datadir is changed in .conf file:
     ClearDatadirCache();
+}
+
+void InitializeConfigFile()
+{
+    // TODO: remove boost in favor of C++11 file lookup/handling
+    boost::filesystem::ifstream streamConfig(GetConfigFile());
+    if (!streamConfig.good())
+    {
+        // Create Espers.conf
+        BuildConfigFile();
+        // Then read it...
+        ReadConfigFile();
+    } else {
+        // Read Espers.conf
+        ReadConfigFile();
+    }
 }
 
 boost::filesystem::path GetPidFile()

@@ -89,6 +89,7 @@ enum
 {
     MSG_TX = 1,
     MSG_BLOCK,
+    MSG_DEMIBLOCK,
 };
 
 extern bool fDiscover;

@@ -30,13 +30,13 @@ static const int DATABASE_VERSION = 70001;
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 60006;
+static const int PROTOCOL_VERSION = 60007;
 
 // intial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 100;
 
 // disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 60003;
+static const int MIN_PEER_PROTO_VERSION = 60006;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this
@@ -44,13 +44,23 @@ static const int CADDR_TIME_VERSION = 31402;
 
 // only request blocks from nodes outside this range of versions
 static const int NOBLKS_VERSION_START = 60000;
-static const int NOBLKS_VERSION_END = 60000;
+static const int NOBLKS_VERSION_END = 60005;
+
+// hard cutoff time for legacy/future network connections
+static const int64_t HRD_LEGACY_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
+static const int64_t HRD_FUTURE_CUTOFF = 9993058800; // OFF (NOT TOGGLED)
+
+// hard cutoff block height for min-peer relay/sync
+static const int BLOCKHEIGHT_CUTOFF = 2727950;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
 
 // "mempool" command, enhanced "getdata" behavior starts with this version:
 static const int MEMPOOL_GD_VERSION = 60000;
+
+// "demi-nodes" command, enhanced "getdata" behavior starts with this version:
+static const int DEMINODE_VERSION = 60007;
 
 // reject blocks with non-canonical signatures starting from this version
 static const int CANONICAL_BLOCK_SIG_VERSION = 60000;

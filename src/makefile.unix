@@ -103,7 +103,9 @@ xLDFLAGS=$(LDHARDENING) $(LDFLAGS)
 
 OBJS= \
     obj/version.o \
+    obj/velocity.o \
     obj/checkpoints.o \
+    obj/fork.o \
     obj/netbase.o \
     obj/addrman.o \
     obj/crypter.o \
@@ -122,6 +124,7 @@ OBJS= \
     obj/rpcnet.o \
     obj/rpcblockchain.o \
     obj/rpcrawtransaction.o \
+    obj/rpcvelocity.o \
     obj/timedata.o \
     obj/script.o \
     obj/sync.o \
@@ -135,7 +138,11 @@ OBJS= \
     obj/scrypt-arm.o \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
+    obj/blockparams.o \
     obj/chainparams.o \
+    obj/deminode/demimodule.o \
+    obj/deminode/deminet.o \
+    obj/deminode/demisync.o \
     obj/crypto/blake.o\
     obj/crypto/bmw.o\
     obj/crypto/groestl.o\

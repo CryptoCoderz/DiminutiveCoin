@@ -45,7 +45,7 @@ class MergingIterator : public Iterator {
       children_[i].SeekToLast();
     }
     FindLargest();
-    direction_ = kReverse;
+    direction_ = kDigitalKasherse;
   }
 
   virtual void Seek(const Slice& target) {
@@ -90,7 +90,7 @@ class MergingIterator : public Iterator {
     // true for all of the non-current_ children since current_ is
     // the largest child and key() == current_->key().  Otherwise,
     // we explicitly position the non-current_ children.
-    if (direction_ != kReverse) {
+    if (direction_ != kDigitalKasherse) {
       for (int i = 0; i < n_; i++) {
         IteratorWrapper* child = &children_[i];
         if (child != current_) {
@@ -104,7 +104,7 @@ class MergingIterator : public Iterator {
           }
         }
       }
-      direction_ = kReverse;
+      direction_ = kDigitalKasherse;
     }
 
     current_->Prev();
@@ -147,7 +147,7 @@ class MergingIterator : public Iterator {
   // Which direction is the iterator moving?
   enum Direction {
     kForward,
-    kReverse
+    kDigitalKasherse
   };
   Direction direction_;
 };

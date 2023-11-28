@@ -1,22 +1,38 @@
 TEMPLATE = app
 TARGET = DiminutiveCoin-qt
-VERSION = 1.0.1.1
+VERSION = 1.0.1.2
 INCLUDEPATH += src src/json src/qt
-QT += core gui network widgets
+QT += core gui network
 DEFINES += ENABLE_WALLET
-DEFINES += BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
-
+DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static 
+CONFIG += openssl
 QMAKE_CFLAGS += -std=c99
 QMAKE_CXXFLAGS += -fpermissive -std=gnu++11
-
-
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
+}
+
+# WIN32 OS
+# for boost 1.66 on windows, add (MinGW_Version)-mt-s-x32-(Boost_Version)
+# as a reference refer to the below section
+
+win32{
+BOOST_LIB_SUFFIX=-mgw8-mt-s-x32-1_74
+BOOST_INCLUDE_PATH=C:/deps/boost_1_74_0
+BOOST_LIB_PATH=C:/deps/boost_1_74_0/stage/lib
+BDB_INCLUDE_PATH=C:/deps/db-4.8.30.NC/build_unix
+BDB_LIB_PATH=C:/deps/db-4.8.30.NC/build_unix
+OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.2u/include
+OPENSSL_LIB_PATH=C:/deps/openssl-1.0.2u
+MINIUPNPC_INCLUDE_PATH=C:/deps/
+MINIUPNPC_LIB_PATH=C:/deps/miniupnpc-2.1
+QRENCODE_INCLUDE_PATH=C:/deps/qrencode-4.0.2
+QRENCODE_LIB_PATH=C:/deps/qrencode-4.0.2/.libs
 }
 
 # for boost 1.37, add -mt to the boost libraries
@@ -75,15 +91,20 @@ QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
 # We need to exclude this for Windows cross compile with MinGW 4.2.x, as it will result in a non-working executable!
 # This can be enabled for Windows, when we switch to MinGW >= 4.4.x.
 }
-# for extra security on Windows: enable ASLR and DEP via GCC linker flags
-# for compiling a wallet for x86_64 machines - remove `,--large-address-aware` option below as it is ment for 32bit systems!
 
-#win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat,--large-address-aware -static
-win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat -static
-win32:QMAKE_LFLAGS += -static-libgcc -static-libstdc++
+# for extra security (see: https://wiki.debian.org/Hardening): this flag is GCC compiler-specific
+QMAKE_CXXFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+# for extra security on Windows: enable ASLR and DEP via GCC linker flags
+win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
+# on Windows: enable GCC large address aware linker flag
+# for compiling a wallet for x86_64 machines - remove `,--large-address-aware` option below as it is ment for 32bit systems!
+win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+# i686-w64-mingw32
+win32:QMAKE_LFLAGS *= -static-libgcc -static-libstdc++
 
 # use: qmake "USE_QRCODE=1"
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
+USE_QRCODE=1
 contains(USE_QRCODE, 1) {
     message(Building with QRCode support)
     DEFINES += USE_QRCODE
@@ -153,7 +174,7 @@ SOURCES += src/txdb-leveldb.cpp \
     }
     LIBS += -lshlwapi
     # comment out if compile under win:
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libleveldb.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libmemenv.a
+    # genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libleveldb.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libmemenv.a
 }
 genleveldb.target = $$PWD/src/leveldb/libleveldb.a
 genleveldb.depends = FORCE
@@ -206,9 +227,11 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/addrman.h \
     src/base58.h \
     src/bignum.h \
+    src/blockparams.h \
     src/chainparams.h \
     src/chainparamsseeds.h \
     src/checkpoints.h \
+    src/fork.h \
     src/compat.h \
     src/coincontrol.h \
     src/sync.h \
@@ -222,6 +245,7 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/core.h \
     src/main.h \
     src/miner.h \
+    src/mining.h \
     src/net.h \
     src/key.h \
     src/db.h \
@@ -230,6 +254,8 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/walletdb.h \
     src/script.h \
     src/init.h \
+    src/velocity.h \
+    src/rpcvelocity.h \
     src/mruset.h \
     src/json/json_spirit_writer_template.h \
     src/json/json_spirit_writer.h \
@@ -296,7 +322,10 @@ HEADERS += src/qt/diminutivecoingui.h \
     src/crypto/sph_shabal.h \
     src/crypto/sph_whirlpool.h \
     src/crypto/sph_haval.h \
-    src/crypto/sph_sha2.h
+    src/crypto/sph_sha2.h \
+    src/deminode/demimodule.h \
+    src/deminode/deminet.h \
+    src/deminode/demisync.h
 
 SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/qt/transactiontablemodel.cpp \
@@ -311,6 +340,7 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/editaddressdialog.cpp \
     src/qt/diminutivecoinaddressvalidator.cpp \
+    src/blockparams.cpp \
     src/chainparams.cpp \
     src/version.cpp \
     src/sync.cpp \
@@ -325,7 +355,10 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
+    src/velocity.cpp \
+    src/rpcvelocity.cpp \
     src/checkpoints.cpp \
+    src/fork.cpp \
     src/addrman.cpp \
     src/db.cpp \
     src/walletdb.cpp \
@@ -373,7 +406,10 @@ SOURCES += src/qt/diminutivecoin.cpp src/qt/diminutivecoingui.cpp \
     src/scrypt-x86.S \
     src/scrypt-x86_64.S \
     src/scrypt.cpp \
-    src/pbkdf2.cpp
+    src/pbkdf2.cpp \
+    src/deminode/demimodule.cpp \
+    src/deminode/deminet.cpp \
+    src/deminode/demisync.cpp
 
 RESOURCES += \
     src/qt/diminutivecoin.qrc
@@ -429,8 +465,9 @@ isEmpty(BOOST_LIB_SUFFIX) {
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
-    win32:BOOST_THREAD_LIB_SUFFIX = _win32$$BOOST_LIB_SUFFIX
-    else:BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
+    # win32:BOOST_THREAD_LIB_SUFFIX = _win32$$BOOST_LIB_SUFFIX
+    # else:
+    BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
 }
 
 isEmpty(BDB_LIB_PATH) {

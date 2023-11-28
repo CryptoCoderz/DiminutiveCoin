@@ -13,6 +13,8 @@
 #include <QTimer>
 #include <QDebug>
 
+#include <boost/bind.hpp>// TODO: Update handling for newer boost (deprecated)
+
 WalletModel::WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *parent) :
     QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
     transactionTableModel(0),

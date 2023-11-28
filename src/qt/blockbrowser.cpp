@@ -215,7 +215,7 @@ double BlockBrowser::getTxFees(std::string txid)
     if (!tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
 	      return convertCoins(MIN_TX_FEE);
 
-    qint64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
+    qint64 nTxFees = tx.GetValueMapIn(mapInputs)-tx.GetValueOut();
 
     if(tx.IsCoinStake() || tx.IsCoinBase()) {
         ui->feesLabel->setText(QString("Reward:"));
