@@ -22,7 +22,7 @@ QT_TRANSLATE_NOOP("diminutivecoin-core", "Specify connection timeout in millisec
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Connect through SOCKS5 proxy"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Use proxy to reach tor hidden services (default: same as -proxy)"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Allow DNS lookups for -addnode, -seednode and -connect"),
-QT_TRANSLATE_NOOP("diminutivecoin-core", "Listen for connections on <port> (default: 16000 or testnet: 25798)"),
+QT_TRANSLATE_NOOP("diminutivecoin-core", "Listen for connections on <port> (default: 49139 or testnet: 4913)"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Maintain at most <n> connections to peers (default: 125)"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Add a node to connect to and attempt to keep the connection open"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Connect only to the specified node(s)"),
@@ -66,7 +66,7 @@ QT_TRANSLATE_NOOP("diminutivecoin-core", ""
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Username for JSON-RPC connections"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Password for JSON-RPC connections"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", ""
-"Listen for JSON-RPC connections on <port> (default: 16001 or testnet: 25799)"),
+"Listen for JSON-RPC connections on <port> (default: 49122 or testnet: 4912)"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Allow JSON-RPC connections from specified IP address"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Send commands to node running on <ip> (default: 127.0.0.1)"),
 QT_TRANSLATE_NOOP("diminutivecoin-core", "Wait for RPC server to start"),
