@@ -27,12 +27,20 @@ namespace Checkpoints
     //
     static MapCheckpoints mapCheckpoints =
         boost::assign::map_list_of
-         ( 0,      uint256("0x2ce9a9e271caa8fc164d29ea497f60f0a0f6a05998db2430bc5003da148b6699") )
-         ( 6500,      uint256("0x0000000008aaf279a144c9fe085f76046eae800fe49e7743ef477cc1dea55946") )    // Version 1002
-         ( 20000,      uint256("0xd75b1c9bbae68bc5f1a556b82b851651a2bbd3701c0516bb6f4a34ae37425cc8") )   // Version 1003
-         ( 50000,      uint256("0x0000000007ea31edeeea9b5038047cac91639bfcac3f4876230deeb4e569449e") )   // Version 1004
-         ( 500000,      uint256("0x71ab8d761718638410f151b8b34290085fed410ec7a40d248b955a27e24acb6c") )  
-         ( 938888,      uint256("0x000000019d99432d683aea41a13f6f0ee9d5e18866d955cadc135dba12d04132") )  // Version 1010
+         ( 0,         uint256("0x2ce9a9e271caa8fc164d29ea497f60f0a0f6a05998db2430bc5003da148b6699") )
+         ( 6500,      uint256("0x0000000008aaf279a144c9fe085f76046eae800fe49e7743ef477cc1dea55946") )    // Version 1.0.0.2
+         ( 20000,     uint256("0xd75b1c9bbae68bc5f1a556b82b851651a2bbd3701c0516bb6f4a34ae37425cc8") )    // Version 1.0.0.3
+         ( 50000,     uint256("0x0000000007ea31edeeea9b5038047cac91639bfcac3f4876230deeb4e569449e") )    // Version 1.0.0.4
+         ( 500000,    uint256("0x71ab8d761718638410f151b8b34290085fed410ec7a40d248b955a27e24acb6c") )  
+         ( 938888,    uint256("0x000000019d99432d683aea41a13f6f0ee9d5e18866d955cadc135dba12d04132") )    // Version 1.0.1.0
+         ( 1000000,   uint256("0x2d16597353d1229a6bfb0fcf3c217803c458ff667c50199886c88d59b387a12c") )
+         ( 1200000,   uint256("0x6edb68e014b58d395e1b4ab73c8fd5fa93ece8ef2fa4d9ad8b083675ecb8eefd") )
+         ( 1500000,   uint256("0xf6baaa66a04811a6b3cff52ce1009db0a3877682d86464f3d629e5e6269e2e23") )
+         ( 2000000,   uint256("0x00000000503ee5a2905d7e15a36128bd6371625dff4df14ac8fdf8ccb8ee479d") )
+         ( 2200000,   uint256("0x00000000a35b72dafcf3b62624380a8662f8fd12c10594831a3db4b19ea6b217") )
+         ( 2500000,   uint256("0xbc1d838524de7fd49e3fffab146ad45062ca5082042fdadc12d4cf4a66c20787") )
+         ( 2700000,   uint256("0x000000048111f876530734b82bcaa2fc032aef07d5952a11a4aa7dc605ec9526") )
+         ( 2727900,   uint256("0x8da5c57a6299b38287073a506443e89034d8994f624a9d39e314452faa88a66c") )    // Checkpoint befor Hardfork to Version 1.0.1.2
          ;
 
     // TestNet has no checkpoints
