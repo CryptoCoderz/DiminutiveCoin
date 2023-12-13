@@ -1062,11 +1062,11 @@ void BuildConfigFile()
 
     std::string str(s, 34);
     fprintf(ConfFile, "rpcpassword=%s\n", str.c_str());
-    fprintf(ConfFile, "port=16001\n");
-    fprintf(ConfFile, "rpcport=16000\n");
+    fprintf(ConfFile, "port=49139\n");
+    fprintf(ConfFile, "rpcport=49122\n");
     fprintf(ConfFile, "rpcconnect=127.0.0.1\n");
     fprintf(ConfFile, "rpcallowip=127.0.0.1\n");
-    fprintf(ConfFile, "addnode=127.0.0.1:16001\n");
+    fprintf(ConfFile, "addnode=127.0.0.1:49139\n");
     fclose(ConfFile);
 }
 
